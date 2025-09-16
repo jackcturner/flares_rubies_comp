@@ -1,93 +1,87 @@
 import numpy as np
 from astropy.table import Table
-from utils import read_sed_from_hdf5, resample_fluxes, normalise_seds, find_matches
+from utils import read_sed_from_hdf5, resample_fluxes, normalise_seds, find_matches_chi2
 
-# List of filters to use.
-filters = [f'NIRCam.{band}' for band in ['F090W', 'F115W', 'F150W', 'F200W', 'F277W', 'F356W', 
-                                         'F410M', 'F444W']] + ['MIRI.F770W']
+# Use the shifted snapshot.
+base_path = './'
+snapshot = '008_z007p290'
+regions = (['00','01','02','03','04','05','06','07','08','09'] + 
+           [str(i) for i in np.arange(10, 40)])
+phot_path = 'Galaxies/Stars/Photometry/Fluxes/stellar_total'
+sps_model = 'fsps'
 
-# and their pivot wavelength,
-pivots = np.array([9021.53, 11542.61, 15007.44, 19886.48, 27617.40, 35683.62,
+# Filters to use.
+filters = [f'JWST/NIRCam.{band}' for band in ['F115W', 'F150W', 'F200W', 'F277W', 'F356W', 
+                                         'F410M', 'F444W']] + ['JWST/MIRI.F770W']
+
+pivots = np.array([11542.61, 15007.44, 19886.48, 27617.40, 35683.62,
                     40822.38, 44043.15, 76393.34])
-# in microns.
 pivots /= 10000
 
-# The total RUBIES fluxes in nJy.
-rubies_fluxes = [-3.7, 45.2, 75.7, 108.3, 186.0, 469.6, 522.5, 527.6, 673.7]
-rubies_errors = [7.7, 7.9, 6.7, 5.6, 9.3, 23.5, 26.1, 26.4, 94.8]
-rubies = np.column_stack((rubies_fluxes, rubies_errors))
+# The RQG photometry in nJy.
+rqg_fluxes = [45.2, 75.7, 108.3, 186.0, 469.6, 522.5, 527.6, 673.7]
+rqg_errors = [7.9, 6.7, 5.6, 9.3, 23.5, 26.1, 26.4, 94.8]
+rqg = np.column_stack((rqg_fluxes, rqg_errors))
 
-# FLARES region numbers.
-regions = ['00','01','02','03','04','05','06','07','08','09'] + [int(i) for i in np.arange(10, 40)]
+# Various scalers supported, just using 'Sum' for now.
+scalers = ['Sum']
+#scalers = ['Sum', 'Standard', 'MinMax', 0, 1, 2, 3, 4, 5, 6, 7]
 
-# Store the FLARES SEDs, region numbers and master file indices.
+# The number of resampling iterations.
+its = 10000
+
+# For each region.
 flares_seds = 0
 region_num = []
 indices = []
-
-# For each FLARES region.
 for region in regions:
-
-    # Get the path,excluding region 38.
-    path = f'/research/astro/flare/data/flares_rubies_comp/RUBIES_COMP_{region}_008_z007p000.hdf5'
-    if '38' in path:
+    if region == '38':
         continue
 
-    # Get the SED and master file indices.
-    seds, indices_ = read_sed_from_hdf5(path, filters, 'ObservedPhotometry/total/JWST', 
-                                        conversion=(1e23*1e9))
+    # Read SEDs and master file indices.
+    cat_path = f'{base_path}/data/{snapshot}/RUBIES_COMP_{region}_{snapshot}_{sps_model}.hdf5'
+    seds, indices_ = read_sed_from_hdf5(cat_path, filters, phot_path=phot_path)
 
-    # Store region numbers and indices.
-    region_num += [region]*len(indices_)
-    indices += [int(i) for i in indices_]
-
-    # Add additional SEDs to the array.
     if isinstance(flares_seds, int):
         flares_seds = seds
     else:
         flares_seds = np.vstack((flares_seds, seds))
 
+    # Store region numbers and indices.
+    region_num += [region]*len(indices_)
+    indices += [int(i) for i in indices_]
+
+# Store the matching information of each source.
 region_num = np.array(region_num)
 indices = np.array(indices)
 
-# The scalers to use.
-scalers = ['Standard', 'MinMax', 0, 1, 2, 3, 4, 5, 6, 7, 8]
-# The number of resampling iterations.
-its = 1000
-
-# Will store the matching information of each source in a Table.
 match_table = Table()
 match_table['region'] = region_num
-match_table['indices'] = indices
+match_table['index'] = indices
 
-# For each type of scaler.
+# For each scaler.
 for scaler in scalers:
 
     print(f'Scaler: {scaler}')
 
-    # Get an array of resampled and normalised RUBIES SEDS.
-    rubies_seds = resample_fluxes(rubies, its)
-    rubies_seds = normalise_seds(rubies_seds, scaler=scaler)
+    # Get an array of resampled and normalised RQG SEDS.
+    rqg_seds = resample_fluxes(rqg, its)
+    rqg_seds = normalise_seds(rqg_seds, scaler=scaler)
 
     # Normalise the FLARES galaxies in the same way.
     norm_flares = normalise_seds(flares_seds, scaler=scaler)
 
-    # Store the matching info here.
+    # Match each iteration.
     match_info = np.zeros(shape=(norm_flares.shape[0], 2))
-
-    for sed in rubies_seds:
+    for sed in rqg_seds:
 
         # Find the best matching galaxies by shape.
-        best, distances = find_matches(sed, norm_flares)
+        best, distances = find_matches_chi2(sed, norm_flares)
 
-        # Record how many times an SED has had the best match
+        # Record best match and distances.
         match_info[best, 1] += 1
-
-        # and the total distance.
         match_info[:, 0] += distances
 
-    # Store the total number of best matches and total distance for each
-    # object using this scaler.
     if isinstance(scaler, str):
         label = scaler
     else:
@@ -96,17 +90,4 @@ for scaler in scalers:
     match_table[f'{label}_Nbest'] = match_info[:, 1]
     match_table[f'{label}_distance'] = match_info[:, 0]
 
-# Find all _Nbest and _distance columns.
-nbest_columns = [col for col in match_info.colnames if col.endswith('_Nbest')]
-distance_columns = [col for col in match_info.colnames if col.endswith('_distance')]
-
-# Create new 'total' columns for each.
-match_info['total_Nbest'] = np.sum([match_info[col] for col in nbest_columns], axis=0)
-match_info['total_distance'] = np.sum([match_info[col] for col in distance_columns], axis=0)
-
-# Create a sub sample of galaxies that matched at least once.
-s = match_info['total_Nbest'] > 0
-fr_sample = match_info[s]
-
-match_table.write('/research/astrodata/highz/flares_rubies/matching_table.fits', overwrite=True)
-fr_sample.write('/research/astrodata/highz/flares_rubies/FR_sample.fits', overwrite=True)
+match_table.write(f'{base_path}/data/flares_{sps_model}_rqg_matching.fits', overwrite=True)
