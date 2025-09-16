@@ -50,7 +50,7 @@ with h5py.File(master_path, "r") as master:
         sstart = np.cumsum(slength)
         sstart = np.insert(sstart, 0, 0)
 
-        smass = master[f"{key}/Particle/S_Mass"][sstart[idx] : sstart[idx + 1]] * 1e10
+        smass = master[f"{key}/Particle/S_MassInitial"][sstart[idx] : sstart[idx + 1]] * 1e10
         sage = master[f"{key}/Particle/S_Age"][sstart[idx] : sstart[idx + 1]] * 1e3
 
         # Calculate the SFH.
