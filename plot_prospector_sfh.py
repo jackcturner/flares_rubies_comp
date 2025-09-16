@@ -3,9 +3,10 @@ import numpy as np
 from astropy.cosmology import Planck13 as cosmo
 
 import matplotlib.pyplot as plt
+plt.style.use('/cosma/home/dp276/dc-turn11/style.mplstyle')
 plt.rcParams['xtick.top'] = False
 plt.rcParams['xtick.labeltop'] = False
-plt.style.use('/cosma/home/dp276/dc-turn11/style.mplstyle')
+plt.rcParams['axes.ymargin'] = 0.1
 
 # Redshift dependent agebin function.
 def zred_to_agebins(zred=None, agebins=None, nbins_sfh=None, **extras):
