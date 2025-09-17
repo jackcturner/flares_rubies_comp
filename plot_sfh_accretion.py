@@ -5,6 +5,16 @@ from astropy.cosmology import Planck13 as cosmo
 
 import matplotlib.pyplot as plt
 plt.style.use('style.mplstyle')
+plt.rcParams['axes.ymargin'] = 0.1
+
+import cmasher as cmr
+import matplotlib.colors as mcolors
+cmap = plt.get_cmap("cmr.guppy_r")
+
+# Colour top ticks by redshift to match gas history plot.
+z_ticks = np.array(list(range(14, 6, -1)))
+norm = mcolors.BoundaryNorm(boundaries=np.arange(min(z_ticks)-0.5, max(z_ticks)+0.6, 1), 
+                            ncolors=cmap.N)
 
 # FLARES relevant info.
 master_path = 'flares.hdf5'
@@ -133,6 +143,13 @@ positions = [(cosmo.age(7)-cosmo.age(label)).value*1e3 for label in labels]
 top_ax.set_xticks(positions)  
 top_ax.set_xticklabels(labels)
 top_ax.tick_params(which='minor', top=False)
+
+# Create invisible overlay for top ticks.
+overlay_ax = ax[0].twinx() 
+overlay_ax.set_ylim(ax[0].get_ylim())
+overlay_ax.axis("off")
+overlay_ax.scatter(positions, [ax[0].get_ylim()[1]]*len(positions), c=labels, cmap=cmap, s=40,
+                   marker='o', clip_on=False, zorder=10, edgecolor='k', linewidth=0.5)
 
 fig.savefig('plots/sfh_accretion.pdf', dpi=300, bbox_inches='tight')
 plt.show()
