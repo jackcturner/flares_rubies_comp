@@ -54,18 +54,11 @@ with h5py.File(master_path, 'r') as master:
         with h5py.File(f'{base_path}/data/{snapshot}/RUBIES_COMP_{region}_{snapshot}.hdf5') as cat:
             indices = cat['Galaxies/MasterRegionIndex'][:]
 
-        # For selecting gas particles.
-        BH_length = master[f'{key}/Galaxy/BH_Length'][:]
-        BH_start = np.insert(np.cumsum(BH_length), 0, 0)
-
         # Calculate the gas fraction in each object.
         for idx in indices:
 
-            BH_mass = np.sum(master[f"{key}/Particle/BH_Mass"][BH_start[idx]:BH_start[idx+1]]) * 1e10
-
-            total_mass = ((master[f'{key}/Galaxy/Mdm'][idx] * 1e10) + 
-                          (master[f'{key}/Galaxy/Mstar'][idx] * 1e10) + 
-                          (master[f'{key}/Galaxy/Mgas'][idx] * 1e10) + BH_mass)
+            total_mass = ((master[f'{key}/Galaxy/Mstar'][idx] * 1e10) + 
+                          (master[f'{key}/Galaxy/Mgas'][idx] * 1e10))
 
             g_fracs.append((master[f'{key}/Galaxy/Mgas'][idx] * 1e10) / total_mass)
             mstars.append(np.log10(master[f'{key}/Galaxy/Mstar'][idx] * 1e10))
@@ -90,13 +83,8 @@ with h5py.File(master_path, 'r') as master:
                 
                     key_ = f'{region}/{snap}'
 
-                    BH_length = master[f'{key_}/Galaxy/BH_Length'][:]
-                    BH_start = np.insert(np.cumsum(BH_length), 0, 0)
-                    BH_mass = np.sum(master[f"{key_}/Particle/BH_Mass"][BH_start[match_idx]:BH_start[match_idx+1]]) * 1e10
-
-                    total_mass = ((master[f'{key_}/Galaxy/Mdm'][match_idx] * 1e10) + 
-                                  (master[f'{key_}/Galaxy/Mstar'][match_idx] * 1e10) + 
-                                  (master[f'{key_}/Galaxy/Mgas'][match_idx] * 1e10) + BH_mass)
+                    total_mass = ((master[f'{key_}/Galaxy/Mstar'][match_idx] * 1e10) + 
+                                  (master[f'{key_}/Galaxy/Mgas'][match_idx] * 1e10))
                     g_frac = (master[f'{key_}/Galaxy/Mgas'][match_idx] * 1e10) / total_mass
 
                     progen_fracs.append(g_frac)
@@ -124,7 +112,7 @@ ax.legend(frameon=True, framealpha=1, ncols=1, facecolor='white',
 ax.set_xlim(8.5, 10.8)
 ax.set_ylim(-0.05, 1.05)
 
-ax.set_ylabel('$\\mathrm{M_{gas}} \ / \ \\mathrm{M_{total}}$')
+ax.set_ylabel('$\\mathrm{M_{gas}} \ / \ \\mathrm{M_{gas+stars}}$')
 ax.set_xlabel('$\\log_{10}(\\mathrm{M}_{\\mathrm{\\ast}} \ / \ \\mathrm{M}_{\\odot})$')
 
 pos = ax.get_position()
