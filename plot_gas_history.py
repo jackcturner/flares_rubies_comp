@@ -112,7 +112,7 @@ ax.legend(frameon=True, framealpha=1, ncols=1, facecolor='white',
 ax.set_xlim(8.5, 10.8)
 ax.set_ylim(-0.05, 1.05)
 
-ax.set_ylabel('$\\mathrm{M_{gas}} \ / \ \\mathrm{M_{gas+stars}}$')
+ax.set_ylabel('$\\mathrm{M_{gas}} \ / \ (\\mathrm{M_{gas}}+\\mathrm{M_{\\ast}})$')
 ax.set_xlabel('$\\log_{10}(\\mathrm{M}_{\\mathrm{\\ast}} \ / \ \\mathrm{M}_{\\odot})$')
 
 pos = ax.get_position()

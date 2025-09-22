@@ -68,7 +68,7 @@ lower = np.append(lower, lower[-1])
 
 ax.step(bin_edges, np.append(rqg_fnu, rqg_fnu[-1])/norm, where='post', color='black', alpha=0.8, 
         zorder=1.5, label='RQG')
-ax.fill_between(bin_edges, lower, upper, step='post', color='black', alpha=0.3, zorder=1.5)
+ax.fill_between(bin_edges, lower, upper, step='post', color='black', alpha=0.3, zorder=1.5, ec='none')
 
 box = dict(facecolor='white', alpha=1, edgecolor='white')
 

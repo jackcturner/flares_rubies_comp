@@ -96,7 +96,7 @@ with h5py.File(master_path, 'r') as master:
             plt.scatter(mass_limit, np.log10(C_max), color='white', edgecolors='blue', marker='v', 
                         s=30, zorder=1.5, alpha=1)
             plt.errorbar(mass_limit, np.log10(C_max), yerr=[[q_lower], [q_upper]], color='blue', 
-                         capsize=3, linewidth=1, fmt='none', zorder=1.5, alpha=1)
+                         capsize=3, linewidth=1, fmt='none', zorder=1.4, alpha=1)
 
     # Calculate the RQG analogue number density.
     q_rub = 0
